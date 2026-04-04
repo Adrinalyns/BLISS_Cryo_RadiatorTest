@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 
-'''
-This code will be implemented in the first Raspberry PI (named cryo1)
+"""
+BLISS Cryo Radiator Test - RP4 Control System
+Main entry point for cryo1 (first Raspberry Pi)
 
-It will control/read the following devices:
-- 1x pressure transducer through the driver ADS1115
-- 1x RTD sensor through the driver MAX31865
-- 1x Type K Thermocouple through the driver MAX31855
-- 1x motor through the drive BTS7960
-    It will control the motor by sending a PWM signal to the BTS7960, 
-    which will then drive the motor accordingly. 
-    The motor will be used to control the flow of a pump, 
-    and a PID controller (using the motor's encoders) will be implemented to maintain a desired flow rate.
-'''
+Phase 1: Type K Thermocouple reading with threading model
+Phase 2: Add RTD sensor + motor control with PID
+Phase 3: Add pressure sensor + safety features
+
+Devices controlled:
+- 1x Type K Thermocouple (MAX31855) via I2C
+- 1x RTD Sensor (MAX31865) via I2C [Phase 2]
+- 1x Pressure Transducer (ADS1115) via I2C [Phase 3]
+- 1x Motor Driver (BTS7960) with PID controller [Phase 2]
+- 1x Motor Encoder for feedback [Phase 2]
+"""
