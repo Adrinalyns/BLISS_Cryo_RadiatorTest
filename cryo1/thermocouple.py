@@ -10,51 +10,70 @@ NEXT STEPS:
 - Add a window to display the temperature in real time with color coding (green as long as T < 150F, then orange until 180F, then red)
 """
 
-import board
-import busio
 import time
-
-def read_max31855(i2c_address=0x6A):
-    """Read temperature from MAX31855."""
-    
-    # Initialize I2C
-    i2c = busio.I2C(board.SCL, board.SDA)
-    
-    print(f"Reading from MAX31855 at address 0x{i2c_address:02X}...")
-    
+import board
+import digitalio
+import adafruit_max31855
+import tkinter as tk
+ 
+# --- SPI + Thermocouple Setup ---
+spi = board.SPI()
+cs = digitalio.DigitalInOut(board.D5)
+max31855 = adafruit_max31855.MAX31855(spi, cs)
+ 
+# --- Color Logic ---
+def get_color(temp):
+    if temp < 65.0:
+        return "#00CC00"   # Green
+    elif temp <= 85.0:
+        return "#FF8000"   # Orange
+    else:
+        return "#FF0000"   # Red
+ 
+# --- Tkinter Window ---
+root = tk.Tk()
+root.title("Thermocouple K - MAX31855")
+root.geometry("400x220")
+root.configure(bg="black")
+root.resizable(False, False)
+ 
+# Title
+title = tk.Label(root, text="TYPE K THERMOCOUPLE", font=("Helvetica", 16, "bold"),
+                 fg="white", bg="black")
+title.pack(pady=(20, 5))
+ 
+# Temperature display
+temp_label = tk.Label(root, text="--.- °C", font=("Helvetica", 60, "bold"),
+                      fg="#00CC00", bg="black")
+temp_label.pack(pady=5)
+ 
+# Status text
+status_label = tk.Label(root, text="NORMAL", font=("Helvetica", 14, "bold"),
+                        fg="#00CC00", bg="black")
+status_label.pack(pady=5)
+ 
+# --- Update Function ---
+def update():
     try:
-        while True:
-            # Read 4 bytes from MAX31855
-            data = bytearray(4)
-            i2c.readfrom_into(i2c_address, data)
-            
-            # Extract thermocouple temperature (upper 14 bits)
-            temp_raw = (data[0] << 8) | data[1]
-            
-            # Handle negative temperatures (2's complement)
-            if temp_raw & 0x8000:
-                temp_raw = -(0x10000 - temp_raw)
-            
-            # Convert to Celsius (divide by 4, then multiply by 0.25)
-            temp_c = (temp_raw >> 2) * 0.25
-            
-            # Check for faults
-            status = data[3] & 0x07
-            if status & 0x01:
-                print(f"ERROR: Open circuit")
-            elif status & 0x02:
-                print(f"ERROR: Short to ground")
-            elif status & 0x04:
-                print(f"ERROR: Short to VCC")
-            else:
-                print(f"Temp: {temp_c:7.2f}°C")
-            
-            time.sleep(0.2)  # Read every 200ms
-    
-    except KeyboardInterrupt:
-        print("\nStopped")
-    finally:
-        i2c.deinit()
-
-if __name__ == '__main__':
-    read_max31855()
+        tempC = max31855.temperature
+        color = get_color(tempC)
+ 
+        if tempC < 65.0:
+            status = "NORMAL"
+        elif tempC <= 85.0:
+            status = "WARNING"
+        else:
+            status = "DANGER!"
+ 
+        temp_label.config(text=f"{tempC:.1f} °C", fg=color)
+        status_label.config(text=status, fg=color)
+ 
+    except Exception as e:
+        temp_label.config(text="ERROR", fg="#FF0000")
+        status_label.config(text=str(e)[:40], fg="#FF0000")
+ 
+    root.after(100, update)  # 0.1s = 100ms
+ 
+# --- Start ---
+update()
+root.mainloop()
