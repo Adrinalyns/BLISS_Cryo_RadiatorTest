@@ -6,6 +6,8 @@ No dependencies except Adafruit library
 Install these libraries first:
 pip install adafruit-circuitpython-max31855
 
+NEXT STEPS:
+- Add a window to display the temperature in real time with color coding (green as long as T < 150F, then orange until 180F, then red)
 """
 
 import board
