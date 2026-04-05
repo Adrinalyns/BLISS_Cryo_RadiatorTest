@@ -15,6 +15,10 @@ import board
 import digitalio
 import adafruit_max31855
 import tkinter as tk
+
+#Temperature safe/danger
+T_SAFE = 65.0
+T_DANGER = 85.0
  
 # --- SPI + Thermocouple Setup ---
 spi = board.SPI()
@@ -23,9 +27,9 @@ max31855 = adafruit_max31855.MAX31855(spi, cs)
  
 # --- Color Logic ---
 def get_color(temp):
-    if temp < 65.0:
+    if temp < T_SAFE:
         return "#00CC00"   # Green
-    elif temp <= 85.0:
+    elif temp <= T_DANGER:
         return "#FF8000"   # Orange
     else:
         return "#FF0000"   # Red
@@ -58,9 +62,9 @@ def update():
         tempC = max31855.temperature
         color = get_color(tempC)
  
-        if tempC < 65.0:
+        if tempC < T_SAFE:
             status = "NORMAL"
-        elif tempC <= 85.0:
+        elif tempC <= T_DANGER:
             status = "WARNING"
         else:
             status = "DANGER!"
