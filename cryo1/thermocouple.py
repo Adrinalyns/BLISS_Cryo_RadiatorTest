@@ -14,6 +14,7 @@ import time
 import board
 import digitalio
 import adafruit_max31855
+import adafruit_max31865
 import tkinter as tk
 
 #Temperature safe/danger
@@ -24,6 +25,12 @@ T_DANGER = 85.0
 spi = board.SPI()
 cs = digitalio.DigitalInOut(board.D5)
 max31855 = adafruit_max31855.MAX31855(spi, cs)
+
+cs1 = digitalio.DigitalInOut(board.D6)
+sensor1 = adafruit_max31865.MAX31865(spi,cs1,wires=4, rtd_nominal=100.01, ref_resistor=430)
+
+cs2 = digitalio.DigitalInOut(board.D12)
+sensor2 = adafruit_max31865.MAX31865(spi,cs2,wires=4, rtd_nominal=99.99, ref_resistor=430)
  
 # --- Color Logic ---
 def get_color(temp):
@@ -71,6 +78,8 @@ def update():
  
         temp_label.config(text=f"{tempC:.1f} °C", fg=color)
         status_label.config(text=status, fg=color)
+
+        
  
     except Exception as e:
         temp_label.config(text="ERROR", fg="#FF0000")
