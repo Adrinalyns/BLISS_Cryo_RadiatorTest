@@ -15,8 +15,8 @@ from adafruit_ads1x15 import ADS1115, AnalogIn, ads1x15
 # ── Pressure conversion constants ──────────────────────────────────────────────
 V_MIN = 0.5    # Volts → minimum sensor output
 V_MAX = 4.5    # Volts → maximum sensor output
-P_MIN = -14.5  # PSI  → pressure at V_MIN
-P_MAX = 30.0   # PSI  → pressure at V_MAX
+P_MIN = -14.5  # PSIG  → pressure at V_MIN
+P_MAX = 30.0   # PSIG  → pressure at V_MAX
 
 def voltage_to_psi(voltage):
     """
@@ -57,8 +57,8 @@ try:
         psi2 = voltage_to_psi(v2)
 
         # Print results in the requested format
-        print(f"Pressure 1: {v1:.2f} V | {psi1:.1f} PSI    "
-              f"Pressure 2: {v2:.2f} V | {psi2:.1f} PSI")
+        print(f"Pressure 1: {psi1:.1f} PSI")
+        print(f"Pressure 2: {psi2:.1f} PSI")
 
         time.sleep(1)   # Wait 1 second before the next reading
 
