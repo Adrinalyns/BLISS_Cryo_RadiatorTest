@@ -10,8 +10,7 @@ Install dependencies before running:
 import time
 import board
 import busio
-import adafruit_ads1x15.ads1115 as ADS
-from adafruit_ads1x15.analog_in import AnalogIn
+from adafruit_ads1x15 import ADS1115, AnalogIn, ads1x15
 
 # ── Pressure conversion constants ──────────────────────────────────────────────
 V_MIN = 0.5    # Volts → minimum sensor output
@@ -32,12 +31,12 @@ def voltage_to_psi(voltage):
 # ── Setup I2C bus and ADS1115 ───────────────────────────────────────────────────
 try:
     i2c = busio.I2C(board.SCL, board.SDA)   # SCL = GPIO3, SDA = GPIO2
-    ads = ADS.ADS1115(i2c)                  # Default I2C address: 0x48
-    ads.gain = 1                            # Gain=1 → ±4.096 V range (covers 0.5–4.5 V)
+    ads = ADS1115(i2c)                       # Default I2C address: 0x48
+    ads.gain = 1                             # Gain=1 → ±4.096 V range (covers 0.5–4.5 V)
 
-    # Define the two input channels
-    channel0 = AnalogIn(ads, ADS.P0)        # Sensor 1 → A0
-    channel1 = AnalogIn(ads, ADS.P1)        # Sensor 2 → A1
+    # Define the two input channels using Pin constants from the ads1x15 module
+    channel0 = AnalogIn(ads, ads1x15.Pin.A0)   # Sensor 1 → A0
+    channel1 = AnalogIn(ads, ads1x15.Pin.A1)   # Sensor 2 → A1
 
     print("ADS1115 ready. Reading pressure sensors...\n")
 
