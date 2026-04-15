@@ -283,7 +283,7 @@ tk.Label(cmd_row, text=f"{MOTOR_COMMAND}", font=("Courier New", 28, "bold"),
 mdot_row = tk.Frame(right_col, bg=BG); mdot_row.pack(fill="x", pady=4)
 tk.Label(mdot_row, text="Mass flow rate", font=("Helvetica", 12),
          fg=FG_DIM, bg=BG, width=22, anchor="w").pack(side="left")
-tk.Label(mdot_row, text=f"{MASS_FLOW_RATE:.4f} kg/s",
+tk.Label(mdot_row, text=f"{MASS_FLOW_RATE_G_MIN:.1f} g/min",
          font=("Courier New", 28, "bold"), fg=FG_WHITE, bg=BG).pack(side="left")
 
 tk.Frame(right_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
@@ -296,9 +296,9 @@ rtd3_lbl = make_row(right_col, "RTD 3  (D13)")
 tk.Frame(right_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
 
 # Power calcs
-pin_lbl  = make_row(right_col, "P_in  (W)",
+pin_lbl  = make_row(right_col, "Power Heating (In)  (W)",
                     font_val=("Courier New", 28, "bold"), font_lbl=("Helvetica", 12))
-pout_lbl = make_row(right_col, "P_out (W)",
+pout_lbl = make_row(right_col, "Power Radiated (Out) (W)",
                     font_val=("Courier New", 28, "bold"), font_lbl=("Helvetica", 12))
 
 tk.Frame(right_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
@@ -386,7 +386,7 @@ def update():
 
     # ── Power calcs ───────────────────────────────────────────────────────────
     if t1 is not None and t2 is not None:
-        p_in  = C_P * MASS_FLOW_RATE * (t1 - t2)
+        p_in  = C_P * MASS_FLOW_RATE * (t1 - t3)
         pin_lbl.config(text=f"{p_in:.1f} W")
     else:
         p_in = None
