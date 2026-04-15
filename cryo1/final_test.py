@@ -17,9 +17,15 @@ import tkinter as tk
 # =============================================================================
 # USER-DEFINED PARAMETERS — set these before running
 # =============================================================================
-MOTOR_COMMAND  = 50.0          # Motor command value (e.g. % or RPM — units are yours)
-MASS_FLOW_RATE = 0.012         # kg/s  — mass flow rate m_dot
-C_P            = 4186.0        # J/(kg·K) — specific heat capacity (water = 4186)
+MOTOR_COMMAND        = 1850          # Motor command value
+MASS_FLOW_RATE_G_MIN = 50.0      # g/min  — mass flow rate (convert to kg/s in code)
+C_P                  = 3700.0        # J/(kg·K) — specific heat capacity depends on the temperature
+
+# =============================================================================
+# Convert mass flow rate to kg/s for power calculations
+# =============================================================================
+MASS_FLOW_RATE = MASS_FLOW_RATE_G_MIN / 60.0 / 1000.0       # kg/s  — mass flow rate
+
 
 # =============================================================================
 # TEMPERATURE THRESHOLDS (Type K colour coding)
