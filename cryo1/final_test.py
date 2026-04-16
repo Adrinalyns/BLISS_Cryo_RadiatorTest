@@ -57,7 +57,7 @@ SS_PRES_PP      = 0.40         # bar — max allowed peak-to-peak (±2%)
 # =============================================================================
 # CSV
 # =============================================================================
-CSV_FILE = "temperature_log.csv"
+CSV_FILE = "Results.csv"
 if not os.path.exists(CSV_FILE):
     with open(CSV_FILE, "w", newline="") as f:
         csv.writer(f).writerow([
@@ -385,7 +385,7 @@ def update():
     p2_lbl.config(text=f"{fmt(p2, 2)} bar", fg=pressure_color(p2))
 
     # ── Power calcs ───────────────────────────────────────────────────────────
-    if t1 is not None and t2 is not None:
+    if t1 is not None and t3 is not None:
         p_in  = C_P * MASS_FLOW_RATE * (t1 - t3)
         pin_lbl.config(text=f"{p_in:.1f} W")
     else:
