@@ -10,8 +10,10 @@ import os
 import collections
 import board
 import digitalio
+import busio
 import adafruit_max31855
 import adafruit_max31865
+from adafruit_ads1x15 import ADS1115, AnalogIn, ads1x15
 import tkinter as tk
 
 # =============================================================================
@@ -41,6 +43,15 @@ P_GREEN_HI  =  7.0
 P_ORANGE_LO = -11.0
 P_ORANGE_HI =  22.0
 # < -11 or > 22 → red | -11 to -7 or 7 to 22 → orange | -7 to 7 → green
+
+# =============================================================================
+# ── Pressure conversion constants 
+# =============================================================================
+V_MIN = 0.5    # Volts → minimum sensor output
+V_MAX = 4.5    # Volts → maximum sensor output
+P_MIN = -14.5  # PSIG  → pressure at V_MIN
+P_MAX = 30.0   # PSIG  → pressure at V_MAX
+
 
 # =============================================================================
 # STEADY STATE PARAMETERS
@@ -84,16 +95,37 @@ sensor2 = adafruit_max31865.MAX31865(spi, cs2, wires=4, rtd_nominal=99.99,  ref_
 cs3 = digitalio.DigitalInOut(board.D13)
 sensor3 = adafruit_max31865.MAX31865(spi, cs3, wires=4, rtd_nominal=100.01, ref_resistor=430)
 
-# Pressure sensors — adjust to your actual ADC/sensor reads
-# Replace these stubs with your real pressure reading calls
-def read_pressure_1():
-    # TODO: replace with actual sensor read
-    # e.g. return adc.read_voltage() * scale_factor + offset
-    raise NotImplementedError("Wire up pressure sensor 1")
+# =============================================================================
+# I2C SETUP FOR PRESSURE SENSORS
+# =============================================================================
 
-def read_pressure_2():
-    # TODO: replace with actual sensor read
-    raise NotImplementedError("Wire up pressure sensor 2")
+try:
+    i2c = busio.I2C(board.SCL, board.SDA)   # SCL = GPIO3, SDA = GPIO2
+    ads = ADS1115(i2c)                       # Default I2C address: 0x48
+    ads.gain = 1                             # Gain=1 → ±4.096 V range (covers 0.5–4.5 V)
+
+    # Define the two input channels using Pin constants from the ads1x15 module
+    channel0 = AnalogIn(ads, ads1x15.Pin.A0)   # Sensor 1 → A0
+    channel1 = AnalogIn(ads, ads1x15.Pin.A1)   # Sensor 2 → A1
+
+    print("ADS1115 ready. Reading pressure sensors...\n")
+
+except Exception as e:
+    print(f"ERROR: Could not initialise ADS1115 over I2C.\n  → {e}")
+    print("Check wiring: SDA=GPIO2, SCL=GPIO3, VCC=5V, ADDR pin to GND (addr 0x48).")
+    raise SystemExit(1)
+
+
+def voltage_to_psi(voltage):
+    """
+    Convert sensor voltage to PSI using a linear mapping:
+
+        PSI = (V - V_MIN) / (V_MAX - V_MIN) * (P_MAX - P_MIN) + P_MIN
+
+    Example: 2.5 V → midpoint → ~7.75 PSI
+    """
+    return (voltage - V_MIN) / (V_MAX - V_MIN) * (P_MAX - P_MIN) + P_MIN
+
 
 # =============================================================================
 # COLOUR HELPERS
@@ -376,9 +408,9 @@ def update():
     rtd3_lbl.config(text=f"{fmt(t3)} °C")
 
     # ── Pressures ─────────────────────────────────────────────────────────────
-    try:    p1 = read_pressure_1()
+    try:    p1 = psi1 = voltage_to_psi(channel0.voltage)
     except: p1 = None
-    try:    p2 = read_pressure_2()
+    try:    p2 = psi2 = voltage_to_psi(channel1.voltage)
     except: p2 = None
 
     p1_lbl.config(text=f"{fmt(p1, 2)} bar", fg=pressure_color(p1))
