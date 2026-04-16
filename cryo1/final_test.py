@@ -413,8 +413,8 @@ def update():
     try:    p2 = psi2 = voltage_to_psi(channel1.voltage)
     except: p2 = None
 
-    p1_lbl.config(text=f"{fmt(p1, 2)} bar", fg=pressure_color(p1))
-    p2_lbl.config(text=f"{fmt(p2, 2)} bar", fg=pressure_color(p2))
+    p1_lbl.config(text=f"{fmt(p1, 2)} PSIG", fg=pressure_color(p1))
+    p2_lbl.config(text=f"{fmt(p2, 2)} PSIG", fg=pressure_color(p2))
 
     # ── Power calcs ───────────────────────────────────────────────────────────
     if t1 is not None and t3 is not None:
@@ -476,7 +476,7 @@ def update():
     p1s = fmt(p1, 2);   p2s = fmt(p2, 2)
     print(f"[{now_str}]  K={tk_str}°C  "
           f"RTD1={t1s}  RTD2={t2s}  RTD3={t3s}°C  "
-          f"P1={p1s}  P2={p2s} bar")
+          f"P1={p1s}  P2={p2s} PSIG")
 
     # ── CSV ───────────────────────────────────────────────────────────────────
     with open(CSV_FILE, "a", newline="") as f:
