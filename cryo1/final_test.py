@@ -20,7 +20,7 @@ import tkinter as tk
 # USER-DEFINED PARAMETERS — set these before running
 # =============================================================================
 MOTOR_COMMAND        = 1850          # Motor command value
-MASS_FLOW_RATE_G_MIN = 50.0      # g/min  — mass flow rate (convert to kg/s in code)
+MASS_FLOW_RATE_G_MIN = 62.3      # g/min  — mass flow rate (convert to kg/s in code)
 C_P                  = 3700.0        # J/(kg·K) — specific heat capacity depends on the temperature
 
 # =============================================================================
