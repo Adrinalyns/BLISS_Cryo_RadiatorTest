@@ -21,7 +21,7 @@ import tkinter as tk
 # =============================================================================
 MOTOR_COMMAND        = 1850          # Motor command value
 POWER_INPUT_W        = 50            # W Electrical power input written on the power meter
-MASS_FLOW_RATE_G_MIN = 622.8280 - 0.3091*MOTOR_COMMAND      # g/min  — mass flow rate (convert to kg/s in code)
+MASS_FLOW_RATE_G_MIN = 633.8280 - 0.3091*MOTOR_COMMAND      # g/min  — mass flow rate (convert to kg/s in code)
 C_P                  = 3700.0        # J/(kg·K) — specific heat capacity depends on the temperature
 
 # =============================================================================
