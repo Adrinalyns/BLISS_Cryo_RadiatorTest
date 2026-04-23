@@ -66,7 +66,7 @@ PLOT_HISTORY_S  = 7200          # seconds of history kept in RAM
 SENSOR_HZ       = 2             # must match 1000 / root.after interval
 PLOT_MAXLEN     = PLOT_HISTORY_S * SENSOR_HZ
 
-PLOT_UPDATE_MS  = 5000          # redraw plot every 5 s
+PLOT_UPDATE_MS  = 1000          # redraw plot every 5 s
 
 # Plot canvas size (pixels) — keep modest for Pi
 PLOT_W_PX = 780
@@ -448,7 +448,10 @@ def update():
             f"{p_out:.4f}"if p_out is not None else "",
         ])
 
-    root.after(500, update)     # 2 Hz — sensor loop
+    #Schedule next call
+    _elapsed_ms = int(_loop_ms)    # how long the measurement took
+    _wait_ms    = max(1, 1000 - _elapsed_ms)                  # never go negative
+    root.after(_wait_ms, update)                            # 1 Hz 
 
 # =============================================================================
 # START
