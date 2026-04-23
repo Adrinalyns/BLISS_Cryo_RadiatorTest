@@ -18,18 +18,18 @@ from adafruit_ads1x15 import ADS1115, AnalogIn, ads1x15
 import tkinter as tk
 from PIL import Image, ImageTk          # pip install pillow
 import matplotlib
-matplotlib.use("Agg")                   # non-interactive backend â€ no second GUI loop
+matplotlib.use("Agg")                   # non-interactive backend — no second GUI loop
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import datetime
 
 # =============================================================================
-# USER-DEFINED PARAMETERS â€ set these before running
+# USER-DEFINED PARAMETERS — set these before running
 # =============================================================================
 MOTOR_COMMAND        = 1850
 POWER_INPUT_W        = 50
 MASS_FLOW_RATE_G_MIN = 633.8280 - 0.3091 * MOTOR_COMMAND
-C_P                  = 3700.0           # J/(kgÂ·K)
+C_P                  = 3700.0           # J/(kg·K)
 
 # =============================================================================
 # Convert mass flow rate to kg/s
@@ -59,7 +59,7 @@ P_MIN = -14.5   # PSIG
 P_MAX = 30.0    # PSIG
 
 # =============================================================================
-# PLOT HISTORY â€ 2 hours at 2 Hz = 14 400 points max
+# PLOT HISTORY — 2 hours at 2 Hz = 14 400 points max
 # Reduce PLOT_HISTORY_S to save memory on long runs
 # =============================================================================
 PLOT_HISTORY_S  = 7200          # seconds of history kept in RAM
@@ -68,7 +68,7 @@ PLOT_MAXLEN     = PLOT_HISTORY_S * SENSOR_HZ
 
 PLOT_UPDATE_MS  = 1000          # redraw plot every 5 s
 
-# Plot canvas size (pixels) â€ keep modest for Pi
+# Plot canvas size (pixels) — keep modest for Pi
 PLOT_W_PX = 780
 PLOT_H_PX = 520
 
@@ -113,7 +113,7 @@ try:
     channel1 = AnalogIn(ads, ads1x15.Pin.A1)
     print("ADS1115 ready.\n")
 except Exception as e:
-    print(f"ERROR: Could not initialise ADS1115.\n  â {e}")
+    print(f"ERROR: Could not initialise ADS1115.\n  → {e}")
     raise SystemExit(1)
 
 
@@ -169,12 +169,12 @@ for ax in (ax_temp, ax_pow):
     ax.xaxis.set_major_locator(mdates.AutoDateLocator())
 
 ax_temp.set_title("RTD Temperatures", color="#AAAAAA", fontsize=10, pad=4)
-ax_temp.set_ylabel("Â°C", color="#AAAAAA", fontsize=9)
+ax_temp.set_ylabel("°C", color="#AAAAAA", fontsize=9)
 
 ax_pow.set_title("Power Estimates", color="#AAAAAA", fontsize=10, pad=4)
 ax_pow.set_ylabel("W", color="#AAAAAA", fontsize=9)
 
-# Pre-create line objects â€ updating data is cheaper than recreating lines
+# Pre-create line objects — updating data is cheaper than recreating lines
 line_t1, = ax_temp.plot([], [], color="#00BFFF", linewidth=1.2, label="RTD 1")
 line_t2, = ax_temp.plot([], [], color="#FF6347", linewidth=1.2, label="RTD 2")
 line_t3, = ax_temp.plot([], [], color="#90EE90", linewidth=1.2, label="RTD 3")
@@ -214,7 +214,7 @@ def redraw_plot():
             lbl.set_color("#888888")
             lbl.set_fontsize(8)
 
-    # Render to PNG in memory â PIL â Tk PhotoImage
+    # Render to PNG in memory → PIL → Tk PhotoImage
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=100, facecolor=fig.get_facecolor())
     buf.seek(0)
@@ -223,7 +223,7 @@ def redraw_plot():
 
     plot_canvas.config(width=photo.width(), height=photo.height())
     plot_canvas.create_image(0, 0, anchor="nw", image=photo)
-    plot_canvas.image = photo      # hold reference â€ prevents garbage collection
+    plot_canvas.image = photo      # hold reference — prevents garbage collection
     buf.close()
 
     root.after(PLOT_UPDATE_MS, redraw_plot)
@@ -243,7 +243,7 @@ root.title("Cryo Thermal Monitor")
 root.configure(bg=BG)
 root.resizable(False, False)
 
-# â€â€ Top header bar â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
+# ── Top header bar ────────────────────────────────────────────────────────────
 hdr = tk.Frame(root, bg="#111111")
 hdr.pack(fill="x")
 tk.Label(hdr, text="CRYO THERMAL MONITOR", font=("Helvetica", 18, "bold"),
@@ -252,7 +252,7 @@ clock_lbl = tk.Label(hdr, text="", font=("Courier New", 14),
                      fg=FG_DIM, bg="#111111")
 clock_lbl.pack(side="right", padx=24)
 
-# â€â€ Main body: left | right â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
+# ── Main body: left | right ───────────────────────────────────────────────────
 body = tk.Frame(root, bg=BG)
 body.pack(fill="both", expand=True, padx=20, pady=10)
 
@@ -288,13 +288,13 @@ def static_row(parent, label, value_str):
              fg=FG_WHITE, bg=BG).pack(side="left")
 
 # =============================================================================
-# LEFT COLUMN â€ SAFETY
+# LEFT COLUMN — SAFETY
 # =============================================================================
 section_title(left_col, "SAFETY")
 
 tk.Label(left_col, text="TYPE K THERMOCOUPLE",
          font=("Helvetica", 13, "bold"), fg=FG_DIM, bg=BG).pack(anchor="w")
-tk_temp_lbl = tk.Label(left_col, text="--.- Â°C",
+tk_temp_lbl = tk.Label(left_col, text="--.- °C",
                         font=("Helvetica", 100, "bold"), fg=FG_GREEN, bg=BG)
 tk_temp_lbl.pack(anchor="w", pady=(0, 4))
 tk_status_lbl = tk.Label(left_col, text="NORMAL",
@@ -325,7 +325,7 @@ tk.Label(left_col,
     font=("Helvetica", 10), fg=FG_DIM, bg=BG).pack(anchor="w", pady=(10, 0))
 
 # =============================================================================
-# RIGHT COLUMN â€ split into: measures_col (left) | plot_col (right)
+# RIGHT COLUMN — split into: measures_col (left) | plot_col (right)
 # =============================================================================
 measures_col = tk.Frame(right_col, bg=BG)
 measures_col.pack(side="left", fill="y", anchor="n", padx=(0, 16))
@@ -333,14 +333,14 @@ measures_col.pack(side="left", fill="y", anchor="n", padx=(0, 16))
 plot_col = tk.Frame(right_col, bg=BG)
 plot_col.pack(side="left", fill="both", expand=True, anchor="n")
 
-# â€â€ Setup â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
+# ── Setup ─────────────────────────────────────────────────────────────────────
 section_title(measures_col, "SETUP")
 static_row(measures_col, "Motor command",    f"{MOTOR_COMMAND}")
 static_row(measures_col, "Mass flow rate",   f"{MASS_FLOW_RATE_G_MIN:.1f} g/min")
 static_row(measures_col, "Electrical power", f"{POWER_INPUT_W} W")
 tk.Frame(measures_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
 
-# â€â€ Measurements â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
+# ── Measurements ──────────────────────────────────────────────────────────────
 section_title(measures_col, "MEASUREMENTS")
 rtd1_lbl = make_row(measures_col, "RTD 1  (D6)",  fg_lbl=FG_LABEL)
 rtd2_lbl = make_row(measures_col, "RTD 2  (D12)", fg_lbl=FG_LABEL)
@@ -350,7 +350,7 @@ tk.Frame(measures_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
 pin_lbl  = make_row(measures_col, "Power Heating (In)  (W)",  fg_lbl=FG_LABEL)
 pout_lbl = make_row(measures_col, "Power Radiated (Out) (W)", fg_lbl=FG_LABEL)
 
-# â€â€ Plot canvas â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
+# ── Plot canvas ───────────────────────────────────────────────────────────────
 tk.Label(plot_col, text="LIVE PLOTS", font=("Helvetica", 13, "bold"),
          fg=FG_DIM, bg=BG).pack(anchor="w", pady=(0, 6))
 
@@ -359,29 +359,29 @@ plot_canvas = tk.Canvas(plot_col, width=PLOT_W_PX, height=PLOT_H_PX,
 plot_canvas.pack(anchor="nw")
 
 # =============================================================================
-# UPDATE LOOP  (sensor reads â€ 2 Hz)
+# UPDATE LOOP  (sensor reads — 2 Hz)
 # =============================================================================
 def update():
-    # â± TIMING START â€ delete the 4 lines marked â± to remove timing later
-    _t0 = time.perf_counter()                                              # â±
+    # ⏱ TIMING START — delete the 4 lines marked ⏱ to remove timing later
+    _t0 = time.perf_counter()                                              # ⏱
 
     now_str = time.strftime("%Y-%m-%d %H:%M:%S")
     clock_lbl.config(text=now_str)
 
-    # â€â€ Type K â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
+    # ── Type K ───────────────────────────────────────────────────────────────
     try:
         tk_c   = sensor_k.temperature
         c      = temp_color(tk_c)
         status = ("NORMAL" if tk_c < T_SAFE
                   else "WARNING" if tk_c <= T_DANGER else "DANGER!")
-        tk_temp_lbl.config(text=f"{tk_c:.1f} Â°C", fg=c)
+        tk_temp_lbl.config(text=f"{tk_c:.1f} °C", fg=c)
         tk_status_lbl.config(text=status, fg=c)
     except Exception as e:
         tk_c = None
         tk_temp_lbl.config(text="ERROR", fg="#FF0000")
         tk_status_lbl.config(text=str(e)[:50], fg="#FF0000")
 
-    # â€â€ RTDs â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
+    # ── RTDs ─────────────────────────────────────────────────────────────────
     try:    t1 = sensor1.temperature
     except: t1 = None
     try:    t2 = sensor2.temperature
@@ -389,11 +389,11 @@ def update():
     try:    t3 = sensor3.temperature
     except: t3 = None
 
-    rtd1_lbl.config(text=f"{fmt(t1)} Â°C")
-    rtd2_lbl.config(text=f"{fmt(t2)} Â°C")
-    rtd3_lbl.config(text=f"{fmt(t3)} Â°C")
+    rtd1_lbl.config(text=f"{fmt(t1)} °C")
+    rtd2_lbl.config(text=f"{fmt(t2)} °C")
+    rtd3_lbl.config(text=f"{fmt(t3)} °C")
 
-    # â€â€ Pressures â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
+    # ── Pressures ─────────────────────────────────────────────────────────────
     try:    p1 = voltage_to_psi(channel0.voltage)
     except: p1 = None
     try:    p2 = voltage_to_psi(channel1.voltage)
@@ -402,7 +402,7 @@ def update():
     p1_lbl.config(text=f"{fmt(p1, 2)} PSIG", fg=pressure_color(p1))
     p2_lbl.config(text=f"{fmt(p2, 2)} PSIG", fg=pressure_color(p2))
 
-    # â€â€ Power calcs â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
+    # ── Power calcs ───────────────────────────────────────────────────────────
     if t1 is not None and t3 is not None:
         p_in = C_P * MASS_FLOW_RATE * (t1 - t3)
         pin_lbl.config(text=f"{p_in:.1f} W")
@@ -417,7 +417,7 @@ def update():
         p_out = None
         pout_lbl.config(text="ERR")
 
-    # â€â€ History buffers â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
+    # ── History buffers ───────────────────────────────────────────────────────
     hist_time.append(datetime.datetime.now())
     hist_t1.append(t1    if t1    is not None else float("nan"))
     hist_t2.append(t2    if t2    is not None else float("nan"))
@@ -425,16 +425,16 @@ def update():
     hist_pin.append(p_in  if p_in  is not None else float("nan"))
     hist_pout.append(p_out if p_out is not None else float("nan"))
 
-    # â€â€ Console â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
-    print(f"[{now_str}]  K={fmt(tk_c)}Â°C  "
-          f"RTD1={fmt(t1)}  RTD2={fmt(t2)}  RTD3={fmt(t3)}Â°C  "
+    # ── Console ───────────────────────────────────────────────────────────────
+    print(f"[{now_str}]  K={fmt(tk_c)}°C  "
+          f"RTD1={fmt(t1)}  RTD2={fmt(t2)}  RTD3={fmt(t3)}°C  "
           f"P1={fmt(p1,2)}  P2={fmt(p2,2)} PSIG")
 
-    # â± TIMING END â€ delete these 2 lines to remove timing later
-    _loop_ms = (time.perf_counter() - _t0) * 1000                         # â±
-    print(f"  â³ loop time (excl. sleep): {_loop_ms:.1f} ms")              # â±
+    # ⏱ TIMING END — delete these 2 lines to remove timing later
+    _loop_ms = (time.perf_counter() - _t0) * 1000                         # ⏱
+    print(f"  ↳ loop time (excl. sleep): {_loop_ms:.1f} ms")              # ⏱
 
-    # â€â€ CSV â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€â€
+    # ── CSV ───────────────────────────────────────────────────────────────────
     with open(CSV_FILE, "a", newline="") as f:
         csv.writer(f).writerow([
             now_str,
