@@ -33,7 +33,7 @@ MASS_FLOW_RATE = MASS_FLOW_RATE_G_MIN / 60.0 / 1000.0       # kg/s  — mass flo
 # TEMPERATURE THRESHOLDS (Type K colour coding)
 # =============================================================================
 T_SAFE   = 65.0
-T_DANGER = 85.0
+T_DANGER = 88.0
 
 # =============================================================================
 # PRESSURE THRESHOLDS
@@ -482,14 +482,14 @@ def update():
     with open(CSV_FILE, "a", newline="") as f:
         csv.writer(f).writerow([
             now_str,
-            f"{tk_c:.2f}" if tk_c is not None else "",
-            f"{t1:.2f}"   if t1   is not None else "",
-            f"{t2:.2f}"   if t2   is not None else "",
-            f"{t3:.2f}"   if t3   is not None else "",
-            f"{p1:.3f}"   if p1   is not None else "",
-            f"{p2:.3f}"   if p2   is not None else "",
-            f"{p_in:.2f}" if p_in  is not None else "",
-            f"{p_out:.2f}"if p_out is not None else "",
+            f"{tk_c:.4f}" if tk_c is not None else "",
+            f"{t1:.4f}"   if t1   is not None else "",
+            f"{t2:.4f}"   if t2   is not None else "",
+            f"{t3:.4f}"   if t3   is not None else "",
+            f"{p1:.4f}"   if p1   is not None else "",
+            f"{p2:.4f}"   if p2   is not None else "",
+            f"{p_in:.4f}" if p_in  is not None else "",
+            f"{p_out:.4f}"if p_out is not None else "",
         ])
 
     root.after(500, update)   # 2 Hz
