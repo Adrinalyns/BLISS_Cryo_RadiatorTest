@@ -20,7 +20,8 @@ import tkinter as tk
 # USER-DEFINED PARAMETERS — set these before running
 # =============================================================================
 MOTOR_COMMAND        = 1850          # Motor command value
-MASS_FLOW_RATE_G_MIN = 62.3      # g/min  — mass flow rate (convert to kg/s in code)
+POWER_INPUT_W        = 50            # W Electrical power input written on the power meter
+MASS_FLOW_RATE_G_MIN = 622.8280 - 0.3091*MOTOR_COMMAND      # g/min  — mass flow rate (convert to kg/s in code)
 C_P                  = 3700.0        # J/(kg·K) — specific heat capacity depends on the temperature
 
 # =============================================================================
@@ -45,7 +46,7 @@ P_ORANGE_HI =  22.0
 # < -11 or > 22 → red | -11 to -7 or 7 to 22 → orange | -7 to 7 → green
 
 # =============================================================================
-# ── Pressure conversion constants 
+# ── Pressure conversion constants
 # =============================================================================
 V_MIN = 0.5    # Volts → minimum sensor output
 V_MAX = 4.5    # Volts → maximum sensor output
@@ -214,6 +215,7 @@ def compute_ss_state():
 # =============================================================================
 BG       = "black"
 FG_DIM   = "#555555"
+FG_LABEL = "#AAAAAA"     # brighter grey for measurement labels
 FG_WHITE = "white"
 FG_GREEN = "#00CC00"
 SEP_COL  = "#333333"
@@ -249,15 +251,24 @@ def section_title(parent, text):
     tk.Frame(parent, bg=SEP_COL, height=1).pack(fill="x", pady=(0, 16))
 
 def make_row(parent, label_text, font_val=("Courier New", 28, "bold"),
-             font_lbl=("Helvetica", 12)):
+             font_lbl=("Helvetica", 14), fg_lbl=None):
     row = tk.Frame(parent, bg=BG)
     row.pack(fill="x", pady=4)
     tk.Label(row, text=label_text, font=font_lbl,
-             fg=FG_DIM, bg=BG, width=22, anchor="w").pack(side="left")
+             fg=fg_lbl if fg_lbl else FG_DIM, bg=BG, width=22, anchor="w").pack(side="left")
     val_lbl = tk.Label(row, text="---", font=font_val,
                        fg=FG_WHITE, bg=BG, anchor="w")
     val_lbl.pack(side="left")
     return val_lbl
+
+def static_row(parent, label, value_str):
+    """A non-updating display row for fixed setup parameters."""
+    row = tk.Frame(parent, bg=BG)
+    row.pack(fill="x", pady=4)
+    tk.Label(row, text=label, font=("Helvetica", 14),
+             fg=FG_LABEL, bg=BG, width=22, anchor="w").pack(side="left")
+    tk.Label(row, text=value_str, font=("Courier New", 28, "bold"),
+             fg=FG_WHITE, bg=BG).pack(side="left")
 
 # =============================================================================
 # LEFT COLUMN — SAFETY
@@ -301,37 +312,35 @@ legend = tk.Label(left_col,
 legend.pack(anchor="w", pady=(10, 0))
 
 # =============================================================================
-# RIGHT COLUMN — MEASUREMENTS
+# RIGHT COLUMN — SETUP then MEASUREMENTS
 # =============================================================================
-section_title(right_col, "MEASUREMENTS")
 
-# Static user-defined values (printed once, not updated)
-cmd_row = tk.Frame(right_col, bg=BG); cmd_row.pack(fill="x", pady=4)
-tk.Label(cmd_row, text="Motor command", font=("Helvetica", 12),
-         fg=FG_DIM, bg=BG, width=22, anchor="w").pack(side="left")
-tk.Label(cmd_row, text=f"{MOTOR_COMMAND}", font=("Courier New", 28, "bold"),
-         fg=FG_WHITE, bg=BG).pack(side="left")
+# ── Setup section (static, user-defined values) ───────────────────────────────
+section_title(right_col, "SETUP")
 
-mdot_row = tk.Frame(right_col, bg=BG); mdot_row.pack(fill="x", pady=4)
-tk.Label(mdot_row, text="Mass flow rate", font=("Helvetica", 12),
-         fg=FG_DIM, bg=BG, width=22, anchor="w").pack(side="left")
-tk.Label(mdot_row, text=f"{MASS_FLOW_RATE_G_MIN:.1f} g/min",
-         font=("Courier New", 28, "bold"), fg=FG_WHITE, bg=BG).pack(side="left")
+static_row(right_col, "Motor command",    f"{MOTOR_COMMAND}")
+static_row(right_col, "Mass flow rate",   f"{MASS_FLOW_RATE_G_MIN:.1f} g/min")
+static_row(right_col, "Electrical power", f"{POWER_INPUT_W} W")
 
 tk.Frame(right_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
 
+# ── Measurements section ──────────────────────────────────────────────────────
+section_title(right_col, "MEASUREMENTS")
+
 # RTD temperatures
-rtd1_lbl = make_row(right_col, "RTD 1  (D6)")
-rtd2_lbl = make_row(right_col, "RTD 2  (D12)")
-rtd3_lbl = make_row(right_col, "RTD 3  (D13)")
+rtd1_lbl = make_row(right_col, "RTD 1  (D6)",  fg_lbl=FG_LABEL)
+rtd2_lbl = make_row(right_col, "RTD 2  (D12)", fg_lbl=FG_LABEL)
+rtd3_lbl = make_row(right_col, "RTD 3  (D13)", fg_lbl=FG_LABEL)
 
 tk.Frame(right_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
 
 # Power calcs
 pin_lbl  = make_row(right_col, "Power Heating (In)  (W)",
-                    font_val=("Courier New", 28, "bold"), font_lbl=("Helvetica", 12))
+                    font_val=("Courier New", 28, "bold"),
+                    font_lbl=("Helvetica", 14), fg_lbl=FG_LABEL)
 pout_lbl = make_row(right_col, "Power Radiated (Out) (W)",
-                    font_val=("Courier New", 28, "bold"), font_lbl=("Helvetica", 12))
+                    font_val=("Courier New", 28, "bold"),
+                    font_lbl=("Helvetica", 14), fg_lbl=FG_LABEL)
 
 tk.Frame(right_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
 
@@ -379,6 +388,9 @@ def draw_ss_bar(ratio, color):
 # UPDATE LOOP
 # =============================================================================
 def update():
+    # ⏱ TIMING START — delete the 4 lines marked ⏱ to remove timing later
+    _t0 = time.perf_counter()                                              # ⏱
+
     now_str = time.strftime("%Y-%m-%d %H:%M:%S")
     clock_lbl.config(text=now_str)
 
@@ -408,9 +420,9 @@ def update():
     rtd3_lbl.config(text=f"{fmt(t3)} °C")
 
     # ── Pressures ─────────────────────────────────────────────────────────────
-    try:    p1 = psi1 = voltage_to_psi(channel0.voltage)
+    try:    p1 = voltage_to_psi(channel0.voltage)
     except: p1 = None
-    try:    p2 = psi2 = voltage_to_psi(channel1.voltage)
+    try:    p2 = voltage_to_psi(channel1.voltage)
     except: p2 = None
 
     p1_lbl.config(text=f"{fmt(p1, 2)} PSIG", fg=pressure_color(p1))
@@ -477,6 +489,10 @@ def update():
     print(f"[{now_str}]  K={tk_str}°C  "
           f"RTD1={t1s}  RTD2={t2s}  RTD3={t3s}°C  "
           f"P1={p1s}  P2={p2s} PSIG")
+
+    # ⏱ TIMING END — delete these 2 lines to remove timing later
+    _loop_ms = (time.perf_counter() - _t0) * 1000                         # ⏱
+    print(f"  ↳ loop time (excl. sleep): {_loop_ms:.1f} ms")              # ⏱
 
     # ── CSV ───────────────────────────────────────────────────────────────────
     with open(CSV_FILE, "a", newline="") as f:
