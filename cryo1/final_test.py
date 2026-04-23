@@ -28,7 +28,7 @@ import datetime
 # =============================================================================
 MOTOR_COMMAND        = 1850
 POWER_INPUT_W        = 50
-MASS_FLOW_RATE_G_MIN = 633.8280 - 0.3091 * MOTOR_COMMAND
+MASS_FLOW_RATE_G_MIN = 622.8280 - 0.3091 * MOTOR_COMMAND
 C_P                  = 3700.0           # J/(kg·K)
 
 # =============================================================================
@@ -325,34 +325,38 @@ tk.Label(left_col,
     font=("Helvetica", 10), fg=FG_DIM, bg=BG).pack(anchor="w", pady=(10, 0))
 
 # =============================================================================
-# RIGHT COLUMN — SETUP + MEASUREMENTS + PLOT
+# RIGHT COLUMN — split into: measures_col (left) | plot_col (right)
 # =============================================================================
+measures_col = tk.Frame(right_col, bg=BG)
+measures_col.pack(side="left", fill="y", anchor="n", padx=(0, 16))
+
+plot_col = tk.Frame(right_col, bg=BG)
+plot_col.pack(side="left", fill="both", expand=True, anchor="n")
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
-section_title(right_col, "SETUP")
-static_row(right_col, "Motor command",    f"{MOTOR_COMMAND}")
-static_row(right_col, "Mass flow rate",   f"{MASS_FLOW_RATE_G_MIN:.1f} g/min")
-static_row(right_col, "Electrical power", f"{POWER_INPUT_W} W")
-tk.Frame(right_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
+section_title(measures_col, "SETUP")
+static_row(measures_col, "Motor command",    f"{MOTOR_COMMAND}")
+static_row(measures_col, "Mass flow rate",   f"{MASS_FLOW_RATE_G_MIN:.1f} g/min")
+static_row(measures_col, "Electrical power", f"{POWER_INPUT_W} W")
+tk.Frame(measures_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
 
 # ── Measurements ──────────────────────────────────────────────────────────────
-section_title(right_col, "MEASUREMENTS")
-rtd1_lbl = make_row(right_col, "RTD 1  (D6)",  fg_lbl=FG_LABEL)
-rtd2_lbl = make_row(right_col, "RTD 2  (D12)", fg_lbl=FG_LABEL)
-rtd3_lbl = make_row(right_col, "RTD 3  (D13)", fg_lbl=FG_LABEL)
-tk.Frame(right_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
+section_title(measures_col, "MEASUREMENTS")
+rtd1_lbl = make_row(measures_col, "RTD 1  (D6)",  fg_lbl=FG_LABEL)
+rtd2_lbl = make_row(measures_col, "RTD 2  (D12)", fg_lbl=FG_LABEL)
+rtd3_lbl = make_row(measures_col, "RTD 3  (D13)", fg_lbl=FG_LABEL)
+tk.Frame(measures_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
 
-pin_lbl  = make_row(right_col, "Power Heating (In)  (W)",  fg_lbl=FG_LABEL)
-pout_lbl = make_row(right_col, "Power Radiated (Out) (W)", fg_lbl=FG_LABEL)
-tk.Frame(right_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
+pin_lbl  = make_row(measures_col, "Power Heating (In)  (W)",  fg_lbl=FG_LABEL)
+pout_lbl = make_row(measures_col, "Power Radiated (Out) (W)", fg_lbl=FG_LABEL)
 
 # ── Plot canvas ───────────────────────────────────────────────────────────────
-tk.Label(right_col, text="LIVE PLOTS", font=("Helvetica", 13, "bold"),
+tk.Label(plot_col, text="LIVE PLOTS", font=("Helvetica", 13, "bold"),
          fg=FG_DIM, bg=BG).pack(anchor="w", pady=(0, 6))
 
-plot_canvas = tk.Canvas(right_col, width=PLOT_W_PX, height=PLOT_H_PX,
+plot_canvas = tk.Canvas(plot_col, width=PLOT_W_PX, height=PLOT_H_PX,
                          bg="#0d0d0d", highlightthickness=0)
-plot_canvas.pack(anchor="w")
+plot_canvas.pack(anchor="nw")
 
 # =============================================================================
 # UPDATE LOOP  (sensor reads — 2 Hz)
