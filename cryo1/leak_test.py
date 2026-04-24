@@ -215,7 +215,7 @@ root.resizable(False, False)
 hdr = tk.Frame(root, bg="#111111")
 hdr.pack(fill="x")
 tk.Label(hdr, text="LEAK TEST MONITOR", font=("Helvetica", 18, "bold"),
-         fg=FG_WHITE, bg="#111111").pack(side="left", padx=24, pady=8)
+         fg=FG_WHITE, bg="#111111").pack(side="left", padx=24, pady=4)
 clock_lbl = tk.Label(hdr, text="", font=("Courier New", 13),
                      fg=FG_DIM, bg="#111111")
 clock_lbl.pack(side="right", padx=24)
@@ -233,13 +233,13 @@ right_col.pack(side="left", fill="y", anchor="n", padx=(0, 0))
 # =============================================================================
 # HELPER WIDGETS
 # =============================================================================
-def hsep(parent, pady=(6, 6)):
+def hsep(parent, pady=(3, 3)):
     tk.Frame(parent, bg=SEP_COL, height=1).pack(fill="x", pady=pady)
 
 def section_hdr(parent, text):
     tk.Label(parent, text=text, font=("Helvetica", 13, "bold"),
-             fg="#AAAAAA", bg=BG).pack(anchor="w", pady=(4, 4))
-    hsep(parent, pady=(0, 8))
+             fg="#AAAAAA", bg=BG).pack(anchor="w", pady=(2, 2))
+    hsep(parent, pady=(0, 4))
 
 def info_row(parent, label_text, value_text="---", value_font=("Courier New", 18, "bold")):
     """Static label + dynamic value. Returns the value Label widget."""
@@ -277,7 +277,7 @@ init_p1_lbl = info_row(left_col, "Initial Pressure 1")
 
 # P1 current row: label | big value | elapsed time
 p1_row = tk.Frame(left_col, bg=BG)
-p1_row.pack(fill="x", pady=2)
+p1_row.pack(fill="x", pady=0)
 tk.Label(p1_row, text="P1  (current)", font=("Helvetica", 11),
          fg=FG_LABEL, bg=BG, width=24, anchor="w").pack(side="left")
 p1_lbl = tk.Label(p1_row, text="---", font=("Courier New", 38, "bold"),
@@ -299,7 +299,7 @@ section_hdr(left_col, "SENSOR 2")
 init_p2_lbl = info_row(left_col, "Initial Pressure 2")
 
 p2_row = tk.Frame(left_col, bg=BG)
-p2_row.pack(fill="x", pady=2)
+p2_row.pack(fill="x", pady=0)
 tk.Label(p2_row, text="P2  (current)", font=("Helvetica", 11),
          fg=FG_LABEL, bg=BG, width=24, anchor="w").pack(side="left")
 p2_lbl = tk.Label(p2_row, text="---", font=("Courier New", 38, "bold"),
