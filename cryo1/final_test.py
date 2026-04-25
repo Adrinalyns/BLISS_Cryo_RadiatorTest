@@ -16,12 +16,10 @@ import adafruit_max31855
 import adafruit_max31865
 from adafruit_ads1x15 import ADS1115, AnalogIn, ads1x15
 import tkinter as tk
-from PIL import Image, ImageTk          # pip install pillow
+from PIL import Image, ImageTk
 import matplotlib
 matplotlib.use("Agg")                   # non-interactive backend — no second GUI loop
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import datetime
 
 # =============================================================================
 # USER-DEFINED PARAMETERS — set these before running
@@ -59,18 +57,21 @@ P_MIN = -14.5   # PSIG
 P_MAX = 30.0    # PSIG
 
 # =============================================================================
-# PLOT HISTORY — 2 hours at 2 Hz = 14 400 points max
+# PLOT HISTORY — 2 hours at 1 Hz = 7200 points max
 # Reduce PLOT_HISTORY_S to save memory on long runs
 # =============================================================================
 PLOT_HISTORY_S  = 7200          # seconds of history kept in RAM
-SENSOR_HZ       = 2             # must match 1000 / root.after interval
+SENSOR_HZ       = 1             # 1 Hz — matches root.after(1000, ...) target
 PLOT_MAXLEN     = PLOT_HISTORY_S * SENSOR_HZ
 
-PLOT_UPDATE_MS  = 1000          # redraw plot every 5 s
+PLOT_UPDATE_MS  = 1000          # redraw plot every 1 s
+
+# Rate-of-change sliding window
+ROC_WINDOW_S = 30               # seconds — window for °C/min calculation
 
 # Plot canvas size (pixels) — keep modest for Pi
 PLOT_W_PX = 780
-PLOT_H_PX = 520
+PLOT_H_PX = 750                 # taller to accommodate 3 subplots
 
 # =============================================================================
 # CSV
@@ -106,8 +107,8 @@ sensor3 = adafruit_max31865.MAX31865(spi, cs3, wires=4, rtd_nominal=100.01, ref_
 # I2C + PRESSURE SENSORS
 # =============================================================================
 try:
-    i2c  = busio.I2C(board.SCL, board.SDA)
-    ads  = ADS1115(i2c)
+    i2c      = busio.I2C(board.SCL, board.SDA)
+    ads      = ADS1115(i2c)
     ads.gain = 1
     channel0 = AnalogIn(ads, ads1x15.Pin.A0)
     channel1 = AnalogIn(ads, ads1x15.Pin.A1)
@@ -130,49 +131,95 @@ def temp_color(temp):
     return "#FF0000"
 
 def pressure_color(p):
-    if p is None:                       return "#FF0000"
-    if P_GREEN_LO <= p <= P_GREEN_HI:   return "#00CC00"
-    if P_ORANGE_LO <= p <= P_ORANGE_HI: return "#FF8000"
+    if p is None:                        return "#FF0000"
+    if P_GREEN_LO <= p <= P_GREEN_HI:    return "#00CC00"
+    if P_ORANGE_LO <= p <= P_ORANGE_HI:  return "#FF8000"
     return "#FF0000"
 
 def fmt(val, decimals=1):
     return "ERR" if val is None else f"{val:.{decimals}f}"
 
 # =============================================================================
-# HISTORY BUFFERS  (timestamps + values)
+# ELAPSED TIME REFERENCE
+# Set once on the very first measurement, never changed after that.
 # =============================================================================
-hist_time = collections.deque(maxlen=PLOT_MAXLEN)   # datetime objects
+t_start = None      # time.perf_counter() value at first measurement
+
+# =============================================================================
+# HISTORY BUFFERS  (elapsed seconds + sensor values)
+# =============================================================================
+hist_time = collections.deque(maxlen=PLOT_MAXLEN)   # elapsed seconds (float)
 hist_t1   = collections.deque(maxlen=PLOT_MAXLEN)
 hist_t2   = collections.deque(maxlen=PLOT_MAXLEN)
 hist_t3   = collections.deque(maxlen=PLOT_MAXLEN)
 hist_pin  = collections.deque(maxlen=PLOT_MAXLEN)
 hist_pout = collections.deque(maxlen=PLOT_MAXLEN)
 
+# Rate-of-change history (°C/min) — one value appended per sensor read
+hist_roc1 = collections.deque(maxlen=PLOT_MAXLEN)
+hist_roc2 = collections.deque(maxlen=PLOT_MAXLEN)
+hist_roc3 = collections.deque(maxlen=PLOT_MAXLEN)
+
+# =============================================================================
+# RATE-OF-CHANGE HELPER
+# =============================================================================
+def compute_roc(hist_t_buf, hist_temp_buf, window_s):
+    """
+    Least-squares slope over the last window_s samples of a temperature buffer.
+    Returns the slope in °C/min, or nan if not enough valid data.
+    hist_t_buf  : deque of elapsed seconds
+    hist_temp_buf: deque of °C values (may contain nan)
+    """
+    n = min(len(hist_t_buf), window_s)
+    if n < 2:
+        return float("nan")
+    times = list(hist_t_buf)[-n:]
+    temps = list(hist_temp_buf)[-n:]
+    # Filter NaN pairs
+    pairs = [(t, v) for t, v in zip(times, temps) if v == v]
+    if len(pairs) < 2:
+        return float("nan")
+    n_  = len(pairs)
+    ts  = [p[0] for p in pairs]
+    vs  = [p[1] for p in pairs]
+    t_m = sum(ts) / n_
+    v_m = sum(vs) / n_
+    num = sum((t - t_m) * (v - v_m) for t, v in zip(ts, vs))
+    den = sum((t - t_m) ** 2 for t in ts)
+    if den == 0:
+        return float("nan")
+    return (num / den) * 60.0       # °C/s → °C/min
+
 # =============================================================================
 # MATPLOTLIB FIGURE  (created once, reused every draw)
 # =============================================================================
 plt.style.use("dark_background")
-fig, (ax_temp, ax_pow) = plt.subplots(
-    2, 1,
+fig, (ax_temp, ax_pow, ax_roc) = plt.subplots(
+    3, 1,
     figsize=(PLOT_W_PX / 100, PLOT_H_PX / 100),
     dpi=100,
     facecolor="#0d0d0d",
 )
-fig.subplots_adjust(left=0.10, right=0.97, top=0.93, bottom=0.12, hspace=0.45)
+fig.subplots_adjust(left=0.10, right=0.97, top=0.95, bottom=0.08, hspace=0.55)
 
-for ax in (ax_temp, ax_pow):
+for ax in (ax_temp, ax_pow, ax_roc):
     ax.set_facecolor("#1a1a1a")
     ax.tick_params(colors="#888888", labelsize=8)
     for spine in ax.spines.values():
         spine.set_edgecolor("#333333")
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
-    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
 
 ax_temp.set_title("RTD Temperatures", color="#AAAAAA", fontsize=10, pad=4)
 ax_temp.set_ylabel("°C", color="#AAAAAA", fontsize=9)
+ax_temp.set_xlabel("Time since start (s)", color="#AAAAAA", fontsize=9)
 
 ax_pow.set_title("Power Estimates", color="#AAAAAA", fontsize=10, pad=4)
 ax_pow.set_ylabel("W", color="#AAAAAA", fontsize=9)
+ax_pow.set_xlabel("Time since start (s)", color="#AAAAAA", fontsize=9)
+
+ax_roc.set_title("RTD Rate of Change  (30 s window)", color="#AAAAAA", fontsize=10, pad=4)
+ax_roc.set_ylabel("°C/min", color="#AAAAAA", fontsize=9)
+ax_roc.set_xlabel("Time since start (s)", color="#AAAAAA", fontsize=9)
+ax_roc.axhline(y=0, color="#444444", linewidth=0.8, linestyle="--")   # zero reference
 
 # Pre-create line objects — updating data is cheaper than recreating lines
 line_t1, = ax_temp.plot([], [], color="#00BFFF", linewidth=1.2, label="RTD 1")
@@ -183,6 +230,12 @@ ax_temp.legend(loc="upper left", fontsize=8, framealpha=0.3)
 line_pin,  = ax_pow.plot([], [], color="#FFD700", linewidth=1.2, label="P heating (in)")
 line_pout, = ax_pow.plot([], [], color="#FF69B4", linewidth=1.2, label="P radiated (out)")
 ax_pow.legend(loc="upper left", fontsize=8, framealpha=0.3)
+
+# Rate-of-change lines — same colours as temperature lines
+line_roc1, = ax_roc.plot([], [], color="#00BFFF", linewidth=1.2, label="RTD 1")
+line_roc2, = ax_roc.plot([], [], color="#FF6347", linewidth=1.2, label="RTD 2")
+line_roc3, = ax_roc.plot([], [], color="#90EE90", linewidth=1.2, label="RTD 3")
+ax_roc.legend(loc="upper left", fontsize=8, framealpha=0.3)
 
 
 def redraw_plot():
@@ -198,33 +251,32 @@ def redraw_plot():
     line_t3.set_data(times, list(hist_t3))
     ax_temp.relim()
     ax_temp.autoscale_view()
-    ax_temp.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
 
     # Update power lines
     line_pin.set_data(times,  list(hist_pin))
     line_pout.set_data(times, list(hist_pout))
     ax_pow.relim()
     ax_pow.autoscale_view()
-    ax_pow.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
 
-    # Rotate x-tick labels
-    for ax in (ax_temp, ax_pow):
-        for lbl in ax.get_xticklabels():
-            lbl.set_rotation(25)
-            lbl.set_color("#888888")
-            lbl.set_fontsize(8)
+    # Update rate-of-change lines
+    line_roc1.set_data(times, list(hist_roc1))
+    line_roc2.set_data(times, list(hist_roc2))
+    line_roc3.set_data(times, list(hist_roc3))
+    ax_roc.relim()
+    ax_roc.autoscale_view()
 
     # Render to PNG in memory → PIL → Tk PhotoImage
+    # .copy() forces PIL to fully decode the image before the buffer is closed
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=100, facecolor=fig.get_facecolor())
     buf.seek(0)
-    img   = Image.open(buf)
+    img   = Image.open(buf).copy()      # .copy() decouples image from buffer
+    buf.close()
     photo = ImageTk.PhotoImage(img)
 
     plot_canvas.config(width=photo.width(), height=photo.height())
     plot_canvas.create_image(0, 0, anchor="nw", image=photo)
-    plot_canvas.image = photo      # hold reference — prevents garbage collection
-    buf.close()
+    plot_canvas.image = photo           # hold reference — prevents garbage collection
 
     root.after(PLOT_UPDATE_MS, redraw_plot)
 
@@ -270,14 +322,20 @@ def section_title(parent, text):
 def make_row(parent, label_text,
              font_val=("Courier New", 28, "bold"),
              font_lbl=("Helvetica", 14),
-             fg_lbl=None):
+             fg_lbl=None,
+             show_roc=False):
     row = tk.Frame(parent, bg=BG)
     row.pack(fill="x", pady=4)
     tk.Label(row, text=label_text, font=font_lbl,
              fg=fg_lbl or FG_DIM, bg=BG, width=24, anchor="w").pack(side="left")
     val_lbl = tk.Label(row, text="---", font=font_val, fg=FG_WHITE, bg=BG, anchor="w")
     val_lbl.pack(side="left")
-    return val_lbl
+    if show_roc:
+        roc_lbl = tk.Label(row, text="", font=("Helvetica", 11),
+                           fg=FG_DIM, bg=BG, anchor="w")
+        roc_lbl.pack(side="left", padx=(14, 0))
+        return val_lbl, roc_lbl
+    return val_lbl, None
 
 def static_row(parent, label, value_str):
     row = tk.Frame(parent, bg=BG)
@@ -342,13 +400,13 @@ tk.Frame(measures_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
 
 # ── Measurements ──────────────────────────────────────────────────────────────
 section_title(measures_col, "MEASUREMENTS")
-rtd1_lbl = make_row(measures_col, "RTD 1  (D6)",  fg_lbl=FG_LABEL)
-rtd2_lbl = make_row(measures_col, "RTD 2  (D12)", fg_lbl=FG_LABEL)
-rtd3_lbl = make_row(measures_col, "RTD 3  (D13)", fg_lbl=FG_LABEL)
+rtd1_lbl, roc1_lbl = make_row(measures_col, "RTD 1  (D6)",  fg_lbl=FG_LABEL, show_roc=True)
+rtd2_lbl, roc2_lbl = make_row(measures_col, "RTD 2  (D12)", fg_lbl=FG_LABEL, show_roc=True)
+rtd3_lbl, roc3_lbl = make_row(measures_col, "RTD 3  (D13)", fg_lbl=FG_LABEL, show_roc=True)
 tk.Frame(measures_col, bg=SEP_COL, height=1).pack(fill="x", pady=(12, 12))
 
-pin_lbl  = make_row(measures_col, "Power Heating (In)  (W)",  fg_lbl=FG_LABEL)
-pout_lbl = make_row(measures_col, "Power Radiated (Out) (W)", fg_lbl=FG_LABEL)
+pin_lbl,  _ = make_row(measures_col, "Power Heating (In)  (W)",  fg_lbl=FG_LABEL)
+pout_lbl, _ = make_row(measures_col, "Power Radiated (Out) (W)", fg_lbl=FG_LABEL)
 
 # ── Plot canvas ───────────────────────────────────────────────────────────────
 tk.Label(plot_col, text="LIVE PLOTS", font=("Helvetica", 13, "bold"),
@@ -359,9 +417,11 @@ plot_canvas = tk.Canvas(plot_col, width=PLOT_W_PX, height=PLOT_H_PX,
 plot_canvas.pack(anchor="nw")
 
 # =============================================================================
-# UPDATE LOOP  (sensor reads — 2 Hz)
+# UPDATE LOOP  (sensor reads — 1 Hz target)
 # =============================================================================
 def update():
+    global t_start
+
     # ⏱ TIMING START — delete the 4 lines marked ⏱ to remove timing later
     _t0 = time.perf_counter()                                              # ⏱
 
@@ -393,6 +453,24 @@ def update():
     rtd2_lbl.config(text=f"{fmt(t2)} °C")
     rtd3_lbl.config(text=f"{fmt(t3)} °C")
 
+    # ── Rate of change — computed on previous buffer, then current appended ───
+    def roc_str(roc):
+        return "" if roc != roc else f"  {roc:+.2f} °C/min"
+
+    def roc_color(roc):
+        if roc != roc:      return FG_DIM
+        if abs(roc) < 0.5:  return FG_DIM
+        if abs(roc) < 2.0:  return "#FF8000"
+        return "#FF0000"
+
+    roc1 = compute_roc(hist_time, hist_t1, ROC_WINDOW_S)
+    roc2 = compute_roc(hist_time, hist_t2, ROC_WINDOW_S)
+    roc3 = compute_roc(hist_time, hist_t3, ROC_WINDOW_S)
+
+    roc1_lbl.config(text=roc_str(roc1), fg=roc_color(roc1))
+    roc2_lbl.config(text=roc_str(roc2), fg=roc_color(roc2))
+    roc3_lbl.config(text=roc_str(roc3), fg=roc_color(roc3))
+
     # ── Pressures ─────────────────────────────────────────────────────────────
     try:    p1 = voltage_to_psi(channel0.voltage)
     except: p1 = None
@@ -417,13 +495,21 @@ def update():
         p_out = None
         pout_lbl.config(text="ERR")
 
-    # ── History buffers ───────────────────────────────────────────────────────
-    hist_time.append(datetime.datetime.now())
+    # ── Elapsed time & history buffers ───────────────────────────────────────
+    # t_start is set once on the very first call — this is t=0 on the plot
+    if t_start is None:
+        t_start = time.perf_counter()
+    elapsed = time.perf_counter() - t_start
+
+    hist_time.append(elapsed)
     hist_t1.append(t1    if t1    is not None else float("nan"))
     hist_t2.append(t2    if t2    is not None else float("nan"))
     hist_t3.append(t3    if t3    is not None else float("nan"))
     hist_pin.append(p_in  if p_in  is not None else float("nan"))
     hist_pout.append(p_out if p_out is not None else float("nan"))
+    hist_roc1.append(roc1)
+    hist_roc2.append(roc2)
+    hist_roc3.append(roc3)
 
     # ── Console ───────────────────────────────────────────────────────────────
     print(f"[{now_str}]  K={fmt(tk_c)}°C  "
@@ -448,14 +534,15 @@ def update():
             f"{p_out:.4f}"if p_out is not None else "",
         ])
 
-    #Schedule next call
-    _elapsed_ms = int(_loop_ms)    # how long the measurement took
-    _wait_ms    = max(1, 1000 - _elapsed_ms)                  # never go negative
-    root.after(_wait_ms, update)                            # 1 Hz 
+    # ── Schedule next call — compensates for execution time ──────────────────
+    # _t0 is always defined (timing block or not) so this is safe either way
+    _elapsed_ms = int((time.perf_counter() - _t0) * 1000)
+    _wait_ms    = max(1, 1000 - _elapsed_ms)
+    root.after(_wait_ms, update)
 
 # =============================================================================
 # START
 # =============================================================================
 update()                                        # first sensor read immediately
-root.after(PLOT_UPDATE_MS, redraw_plot)         # first plot after 5 s
+root.after(PLOT_UPDATE_MS, redraw_plot)         # first plot after 1 s
 root.mainloop()
