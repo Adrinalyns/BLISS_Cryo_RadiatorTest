@@ -455,7 +455,7 @@ def update():
 
     # ── Rate of change — computed on previous buffer, then current appended ───
     def roc_str(roc):
-        return "" if roc != roc else f"  {roc:+.2f} °C/min"
+        return "" if roc != roc else f"  {roc:+.3f} °C/min"
 
     def roc_color(roc):
         if roc != roc:      return FG_DIM
